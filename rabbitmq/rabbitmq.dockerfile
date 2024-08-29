@@ -5,7 +5,7 @@ FROM rabbitmq:3-management
 # COPY rabbitmq.conf /etc/rabbitmq/rabbitmq.conf
 
 # Expose RabbitMQ ports
-EXPOSE 5672 15672
+EXPOSE 5672 5672
 
 # Define the default command to run RabbitMQ server
 CMD ["rabbitmq-server"]
