@@ -1,0 +1,13 @@
+# config.yaml
+server:
+  name: server1
+  production:
+    port: 8080
+    read-timeout : 10
+    write-timeout: 10
+  debug:
+    port: 8080
+    read-timeout: 300
+    write-timeout: 300
+
+database:
