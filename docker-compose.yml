@@ -2,6 +2,6 @@ services:
   rabbitmq:
     build:
       context: .
-      dockerfile: ./rabbitmq/rabbitmq.dockerfile
+      dockerfile: ./rabbitmq/dockerfile
     ports:
       - "5672:5672"
