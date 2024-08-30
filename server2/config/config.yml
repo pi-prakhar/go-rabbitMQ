@@ -1,0 +1,14 @@
+# config.yml
+server:
+  name: "server2"
+  mode: "production"
+  production:
+    port: ":8082"
+    read-timeout : 10
+    write-timeout: 10
+  debug:
+    port: ":8082"
+    read-timeout: 300
+    write-timeout: 300
+
+database:
