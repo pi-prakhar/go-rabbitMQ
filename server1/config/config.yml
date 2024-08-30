@@ -1,13 +1,13 @@
-# config.yaml
+# config.yml
 server:
   name: "server1"
   mode: "production"
   production:
-    port: ":8080"
+    port: ":8081"
     read-timeout : 10
     write-timeout: 10
   debug:
-    port: ":8080"
+    port: ":8081"
     read-timeout: 300
     write-timeout: 300
 
