@@ -57,7 +57,7 @@ func main() {
 		WriteTimeout: time.Second * time.Duration(config.WriteTimeout),
 	}
 
-	log.Printf("INFO : server started on port %s", config.Port)
+	log.Printf("INFO : %s started on port %s", ConfigData.Server.Name, config.Port)
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("Error : Failed to start server at port %s", config.Port)
 	}
