@@ -2,6 +2,7 @@ package rabbitmq
 
 import (
 	"log"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -58,6 +59,8 @@ func (c *Consumer) Listen(queueName string, consumer string, autoAck bool, exclu
 		for msg := range msgs {
 			message := string(msg.Body)
 			log.Printf("INFO : Message : %s Recieved from queue : %s", message, queueName)
+			time.Sleep(10 * time.Second)
+			msg.Ack(false) // if this is not made false the message will still remain in the queue.
 		}
 	}()
 
