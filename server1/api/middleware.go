@@ -2,7 +2,7 @@ package api
 
 import "net/http"
 
-func corsMiddleware(next http.Handler) http.Handler {
+func (app *App) corsMiddleware(next http.Handler) http.Handler {
 	handle := func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE")
