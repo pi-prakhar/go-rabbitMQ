@@ -39,7 +39,7 @@ func main() {
 
 	defer producer.Channel.Close()
 
-	q, err := producer.DeclareQueue(TEST_QUEUE, false, false, false, false, nil)
+	q, err := producer.DeclareQueue(TEST_QUEUE, true, false, false, false, nil)
 	if err != nil {
 		log.Fatal("Error : Failed to declare queue : ", TEST_QUEUE, err)
 	}

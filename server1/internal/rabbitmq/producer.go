@@ -44,8 +44,9 @@ func (p *Producer) Push(ctx context.Context, qName string, body string, exchange
 		mandatory,
 		immediate,
 		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(body),
+			DeliveryMode: amqp.Persistent,
+			ContentType:  "text/plain",
+			Body:         []byte(body),
 		})
 
 	if err != nil {

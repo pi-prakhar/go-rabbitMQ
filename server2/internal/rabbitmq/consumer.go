@@ -53,20 +53,17 @@ func (c *Consumer) Listen(queueName string, consumer string, autoAck bool, exclu
 		return err
 	}
 
-	// var forever chan struct{}
-
 	go func() {
 		for msg := range msgs {
 			message := string(msg.Body)
 			log.Printf("INFO : Message : %s Recieved from queue : %s", message, queueName)
 			time.Sleep(10 * time.Second)
 			msg.Ack(false) // if this is not made false the message will still remain in the queue.
+			log.Printf("INFO : Message : %s Successfully processed", message)
 		}
 	}()
 
 	log.Printf(" [*] Waiting for messages. To exit press CTRL+C")
-
-	// <-forever
 	return nil
 }
 
