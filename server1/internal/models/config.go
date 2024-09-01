@@ -23,6 +23,13 @@ type ConfigData struct {
 			HandlerTimeout int    `yaml:"hander-timeout"`
 		} `yaml:"debug"`
 	} `yaml:"server"`
+	RabbitMQ struct {
+		Host       string `yaml:"host"`
+		User       string `yaml:"user"`
+		Password   string `yaml:"password"`
+		RetryCount int    `yaml:"retry-count"`
+		RetrySleep int    `yaml:"retry-sleep"`
+	} `yaml:"rabbitmq"`
 }
 
 type Config struct {
@@ -41,6 +48,26 @@ func (c *ConfigData) LoadConfig(configFile string) error {
 	err = yaml.Unmarshal(data, c)
 	if err != nil {
 		return err
+	}
+
+	modeFromEnv := os.Getenv("MODE")
+	if modeFromEnv != "" {
+		c.Server.Mode = modeFromEnv
+	}
+
+	rabbitMQHostFromEnv := os.Getenv("RABBITMQ_HOST")
+	if rabbitMQHostFromEnv != "" {
+		c.RabbitMQ.Host = rabbitMQHostFromEnv
+	}
+
+	rabbitMQUserFromEnv := os.Getenv("RABBITMQ_USER")
+	if rabbitMQUserFromEnv != "" {
+		c.RabbitMQ.User = rabbitMQUserFromEnv
+	}
+
+	rabbitMQPasswordFromEnv := os.Getenv("RABBITMQ_PASS")
+	if rabbitMQUserFromEnv != "" {
+		c.RabbitMQ.Password = rabbitMQPasswordFromEnv
 	}
 
 	return nil

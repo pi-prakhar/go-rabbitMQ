@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "server1"
+		},
+		{
+			"path": "rabbitmq"
+		},
+		{
+			"path": "server2"
+		}
+	],
+	"settings": {}
+}

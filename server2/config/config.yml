@@ -1,6 +1,6 @@
 # config.yml
 server:
-  name: "server2"
+  name: "consumer-server"
   mode: "production"
   production:
     port: ":8082"
@@ -13,4 +13,10 @@ server:
     write-timeout: 300
     hanler-timeout: 300
 
-database:
+rabbitmq:
+  host: "localhost"
+  user: "guest"
+  password: "guest"
+  retry-count: 10
+  retry-sleep: 5
+  

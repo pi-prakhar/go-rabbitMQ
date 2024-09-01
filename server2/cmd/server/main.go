@@ -7,8 +7,6 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 const (
@@ -24,10 +22,10 @@ func main() {
 
 	config := ConfigData.GetConfig()
 
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	conn, connStr, err := rabbitmq.Connect(ConfigData.RabbitMQ.Host, ConfigData.RabbitMQ.User, ConfigData.RabbitMQ.Password, ConfigData.RabbitMQ.RetryCount, ConfigData.RabbitMQ.RetrySleep)
 
 	if err != nil {
-		log.Fatal("Error : Failed to connect to RabbitMQ", err)
+		log.Fatalf("Error : Failed to connect to RabbitMQ Server : %s %v", connStr, err)
 	}
 
 	defer conn.Close()
@@ -60,7 +58,7 @@ func main() {
 		WriteTimeout: time.Second * time.Duration(config.WriteTimeout),
 	}
 
-	log.Printf("INFO : %s started on port %s", ConfigData.Server.Name, config.Port)
+	log.Printf("INFO : %s started on port %s in %s mode", ConfigData.Server.Name, config.Port, ConfigData.Server.Mode)
 	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("Failed to start server at port %s", config.Port)
 	}
