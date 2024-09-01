@@ -3,6 +3,35 @@ services:
     build:
       context: .
       dockerfile: ./rabbitmq/dockerfile
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  server1:
+    build:
+      context: ./server1
+      dockerfile: dockerfile
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "8081:8081"
+  
+  server2:
+    build:
+      context: ./server2
+      dockerfile: dockerfile
+    env_file:
+      - .env
+    environment:
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASS: ${RABBITMQ_PASS}
+    ports:
+      - "8082:8082"
