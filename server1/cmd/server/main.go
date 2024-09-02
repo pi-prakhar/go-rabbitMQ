@@ -35,7 +35,7 @@ func main() {
 		log.Fatal("Error : Failed to setup new rabbitMq channel", err)
 	}
 
-	defer producer.Channel.Close()
+	defer producer.GetChannel().Close()
 
 	q, err := producer.DeclareQueue(TEST_QUEUE, true, false, false, false, nil)
 	if err != nil {
@@ -43,7 +43,7 @@ func main() {
 	}
 
 	app := &api.App{
-		Producer:       &producer,
+		Producer:       producer,
 		QueueTest:      &q,
 		HandlerTimeout: config.HandlerTimeout,
 	}

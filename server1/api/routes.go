@@ -8,7 +8,7 @@ import (
 )
 
 type App struct {
-	Producer       *rabbitmq.Producer
+	Producer       rabbitmq.RMQProducer
 	QueueTest      *amqp.Queue
 	HandlerTimeout int
 }

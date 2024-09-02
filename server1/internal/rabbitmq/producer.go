@@ -6,9 +6,15 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type RMQProducer interface {
+	DeclareQueue(name string, durable bool, deleteWhenUnused bool, exclusive bool, noWait bool, args amqp.Table) (amqp.Queue, error)
+	Push(ctx context.Context, qName string, body string, exchangeName string, mandatory bool, immediate bool) error
+	GetChannel() *amqp.Channel
+}
+
 type Producer struct {
 	connection *amqp.Connection
-	Channel    *amqp.Channel
+	channel    *amqp.Channel
 }
 
 func (p *Producer) setup() error {
@@ -17,12 +23,16 @@ func (p *Producer) setup() error {
 	if err != nil {
 		return err
 	}
-	p.Channel = channel
+	p.channel = channel
 	return nil
 }
 
+func (p *Producer) GetChannel() *amqp.Channel {
+	return p.channel
+}
+
 func (p *Producer) DeclareQueue(name string, durable bool, deleteWhenUnused bool, exclusive bool, noWait bool, args amqp.Table) (amqp.Queue, error) {
-	q, err := p.Channel.QueueDeclare(
+	q, err := p.channel.QueueDeclare(
 		name,
 		durable,
 		deleteWhenUnused,
@@ -38,7 +48,7 @@ func (p *Producer) DeclareQueue(name string, durable bool, deleteWhenUnused bool
 }
 
 func (p *Producer) Push(ctx context.Context, qName string, body string, exchangeName string, mandatory bool, immediate bool) error {
-	err := p.Channel.PublishWithContext(ctx,
+	err := p.channel.PublishWithContext(ctx,
 		exchangeName,
 		qName,
 		mandatory,
@@ -55,14 +65,14 @@ func (p *Producer) Push(ctx context.Context, qName string, body string, exchange
 	return nil
 }
 
-func NewProducer(conn *amqp.Connection) (Producer, error) {
-	producer := Producer{
+func NewProducer(conn *amqp.Connection) (RMQProducer, error) {
+	producer := &Producer{
 		connection: conn,
 	}
 
 	err := producer.setup()
 	if err != nil {
-		return Producer{}, err
+		return nil, err
 	}
 
 	return producer, err
