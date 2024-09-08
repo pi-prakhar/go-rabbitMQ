@@ -1,14 +1,16 @@
 package api
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"go-rabbitmq-server1/internal/models"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	amqp "github.com/rabbitmq/amqp091-go"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 )
 
 type MockProducer struct {
@@ -36,46 +38,72 @@ func TestApp_handleTest(t *testing.T) {
 	// Setup
 	mockProducer := new(MockProducer)
 	app := App{
-		Producer: mockProducer,
+		Producer:  mockProducer,
+		QueueTest: &amqp.Queue{Name: "test"},
+	}
+	req, err := http.NewRequest("GET", "/test", nil)
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
 
-	// Create request and recorder
-	req := httptest.NewRequest("GET", "/test", nil)
 	rr := httptest.NewRecorder()
+	handler := app.NewRouter()
 
-	// Call the handler
-	handler := http.HandlerFunc(app.handleTest)
+	// Test
 	handler.ServeHTTP(rr, req)
 
-	// Assert the response
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Equal(t, "Test successful", rr.Body.String())
+	// Assert
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	expected := "Hello"
+
+	if rr.Body.String() != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	}
 }
 
-func TestApp_sendMessageToQueue(t *testing.T) {
+func TestApp_handlePush(t *testing.T) {
 	// Setup
 	mockProducer := new(MockProducer)
-	mockQueue := &amqp.Queue{Name: "test-queue"}
 	app := App{
 		Producer:  mockProducer,
-		QueueTest: mockQueue,
+		QueueTest: &amqp.Queue{Name: "test"},
 	}
 
-	// Expect the producer to call Push with specific arguments
-	mockProducer.On("Push", mock.Anything, "test-queue", "message body", "", false, false).Return(nil)
+	// Create a test message
+	message := models.Message{
+		Message: "test message",
+	}
+	body, _ := json.Marshal(message)
 
-	// Create request and recorder
-	req := httptest.NewRequest("POST", "/push", nil)
+	// Create a request with the message as body
+	req, err := http.NewRequest("GET", "/push", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// req.Header.Set("Content-Type", "application/json") // Set content type if needed
+
+	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
 
-	// Call the handler
-	handler := http.HandlerFunc(app.sendMessageToQueue)
+	// Call the function being tested
+	handler := app.NewRouter()
+
+	// Test
 	handler.ServeHTTP(rr, req)
 
-	// Assert the response
-	assert.Equal(t, http.StatusOK, rr.Code)
-	assert.Equal(t, "Message sent", rr.Body.String())
+	// Check the status code
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
 
-	// Assert that the mock was called as expected
-	mockProducer.AssertExpectations(t)
+	// Check the response body
+	expected := `{"message":"Succesfull Pushed Message to queue test","code":200,"data":"test message"}`
+
+	if strings.Compare(rr.Body.String(), expected) == -1 {
+		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	}
+
 }
