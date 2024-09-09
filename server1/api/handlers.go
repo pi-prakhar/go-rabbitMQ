@@ -24,7 +24,9 @@ func (app *App) sendMessageToQueue(w http.ResponseWriter, r *http.Request) {
 	var res utils.Response
 	var message models.Message
 
-	err := json.NewDecoder(r.Body).Decode(&message)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	err := decoder.Decode(&message)
 	if err != nil {
 		res = &utils.ErrorResponse{
 			Message:    "Failed to decode request body",
@@ -32,6 +34,7 @@ func (app *App) sendMessageToQueue(w http.ResponseWriter, r *http.Request) {
 			Error:      err.Error(),
 		}
 		res.Write(w)
+		return
 	}
 
 	//push to queue
@@ -48,6 +51,7 @@ func (app *App) sendMessageToQueue(w http.ResponseWriter, r *http.Request) {
 			Error:      err.Error(),
 		}
 		res.Write(w)
+		return
 	}
 
 	log.Printf("Successfully pushed message to queue : %s", app.QueueTest.Name)

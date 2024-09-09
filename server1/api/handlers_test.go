@@ -64,7 +64,7 @@ func TestApp_handleTest(t *testing.T) {
 	}
 }
 
-func TestApp_handlePush(t *testing.T) {
+func TestApp_handlePushSuccess(t *testing.T) {
 	// Setup
 	mockProducer := new(MockProducer)
 	app := App{
@@ -101,9 +101,53 @@ func TestApp_handlePush(t *testing.T) {
 
 	// Check the response body
 	expected := `{"message":"Succesfull Pushed Message to queue test","code":200,"data":"test message"}`
+	got := strings.TrimSpace(rr.Body.String())
 
-	if strings.Compare(rr.Body.String(), expected) == -1 {
-		t.Errorf("handler returned unexpected body: got %v want %v", rr.Body.String(), expected)
+	if got != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", got, expected)
+	}
+}
+
+func TestApp_handlePushFailBadRequest(t *testing.T) {
+	// Setup
+	mockProducer := new(MockProducer)
+	app := App{
+		Producer:  mockProducer,
+		QueueTest: &amqp.Queue{Name: "test"},
 	}
 
+	// Create a test message
+	incorrectBody := make(map[string]interface{})
+	incorrectBody["msg"] = "test_message"
+
+	body, _ := json.Marshal(incorrectBody)
+
+	// Create a request with the message as body
+	req, err := http.NewRequest("GET", "/push", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// req.Header.Set("Content-Type", "application/json") // Set content type if needed
+
+	// Create a ResponseRecorder to capture the response
+	rr := httptest.NewRecorder()
+
+	// Call the function being tested
+	handler := app.NewRouter()
+
+	// Test
+	handler.ServeHTTP(rr, req)
+
+	// Check the status code
+	if status := rr.Code; status != http.StatusBadRequest {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
+	}
+
+	// Check the response body
+	expected := `{"message":"Failed to decode request body","code":400,"error":"json: unknown field \"msg\""}`
+	got := strings.TrimSpace(rr.Body.String())
+
+	if got != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", got, expected)
+	}
 }
