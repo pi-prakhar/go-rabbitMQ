@@ -1,7 +1,9 @@
 package models
 
 import (
+	"log"
 	"os"
+	"strconv"
 
 	yaml "gopkg.in/yaml.v2"
 )
@@ -50,25 +52,10 @@ func (c *ConfigData) LoadConfig(configFile string) error {
 		return err
 	}
 
-	modeFromEnv := os.Getenv("MODE")
-	if modeFromEnv != "" {
-		c.Server.Mode = modeFromEnv
-	}
-
-	rabbitMQHostFromEnv := os.Getenv("RABBITMQ_HOST")
-	if rabbitMQHostFromEnv != "" {
-		c.RabbitMQ.Host = rabbitMQHostFromEnv
-	}
-
-	rabbitMQUserFromEnv := os.Getenv("RABBITMQ_USER")
-	if rabbitMQUserFromEnv != "" {
-		c.RabbitMQ.User = rabbitMQUserFromEnv
-	}
-
-	rabbitMQPasswordFromEnv := os.Getenv("RABBITMQ_PASS")
-	if rabbitMQUserFromEnv != "" {
-		c.RabbitMQ.Password = rabbitMQPasswordFromEnv
-	}
+	overrideFromEnv("MODE", &c.Server.Mode)
+	overrideFromEnv("RABBITMQ_HOST", &c.RabbitMQ.Host)
+	overrideFromEnv("RABBITMQ_USER", &c.RabbitMQ.User)
+	overrideFromEnv("RABBITMQ_PASS", &c.RabbitMQ.Password)
 
 	return nil
 }
@@ -87,4 +74,25 @@ func (c *ConfigData) GetConfig() *Config {
 		config.HandlerTimeout = c.Server.Production.HandlerTimeout
 	}
 	return config
+}
+
+func overrideFromEnv(envKey string, configKey any) {
+	value := os.Getenv(envKey)
+	if value != "" {
+		switch v := configKey.(type) {
+		case *string:
+			*v = value
+			log.Printf("INFO : Override config with Env %s successfull", envKey)
+		case *int:
+			if valueInt, err := strconv.Atoi(value); err != nil {
+				log.Printf("Error : Given env value %s of key %s cannot be parsed to int and connot be assigned to %v", value, envKey, configKey)
+			} else {
+				*v = valueInt
+				log.Printf("INFO : Override config with Env %s successfull", envKey)
+			}
+		default:
+			log.Printf("Error : Unsupported config type %v", configKey)
+		}
+
+	}
 }
