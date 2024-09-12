@@ -13,6 +13,6 @@ COPY --from=builder /app/main /app/main
 COPY --from=builder /app/config /app/config
 ENV MODE=production
 ENV RABBITMQ_HOST=rabbitmq
-EXPOSE 8080
+EXPOSE 8082
 WORKDIR /app
 CMD [ "./main" ]
