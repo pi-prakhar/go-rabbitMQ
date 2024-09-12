@@ -79,7 +79,7 @@ func TestApp_handlePushSuccess(t *testing.T) {
 	body, _ := json.Marshal(message)
 
 	// Create a request with the message as body
-	req, err := http.NewRequest("GET", "/push", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", "/push", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,7 +123,7 @@ func TestApp_handlePushFailBadRequest(t *testing.T) {
 	body, _ := json.Marshal(incorrectBody)
 
 	// Create a request with the message as body
-	req, err := http.NewRequest("GET", "/push", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", "/push", bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -149,5 +149,41 @@ func TestApp_handlePushFailBadRequest(t *testing.T) {
 
 	if got != expected {
 		t.Errorf("handler returned unexpected body: got %v want %v", got, expected)
+	}
+}
+
+func TestApp_handlePushFailMethodNOtAllowed(t *testing.T) {
+	// Setup
+	mockProducer := new(MockProducer)
+	app := App{
+		Producer:  mockProducer,
+		QueueTest: &amqp.Queue{Name: "test"},
+	}
+
+	// Create a test message
+	incorrectBody := make(map[string]interface{})
+	incorrectBody["msg"] = "test_message"
+
+	body, _ := json.Marshal(incorrectBody)
+
+	// Create a request with the message as body
+	req, err := http.NewRequest("GET", "/push", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	// req.Header.Set("Content-Type", "application/json") // Set content type if needed
+
+	// Create a ResponseRecorder to capture the response
+	rr := httptest.NewRecorder()
+
+	// Call the function being tested
+	handler := app.NewRouter()
+
+	// Test
+	handler.ServeHTTP(rr, req)
+
+	// Check the status code
+	if status := rr.Code; status != http.StatusMethodNotAllowed {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
 }

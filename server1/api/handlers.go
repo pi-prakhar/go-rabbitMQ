@@ -21,6 +21,11 @@ func (app *App) sendMessageToQueue(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(app.HandlerTimeout))
 	defer cancel()
 
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	var res utils.Response
 	var message models.Message
 
