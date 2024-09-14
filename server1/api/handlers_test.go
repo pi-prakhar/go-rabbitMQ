@@ -14,11 +14,13 @@ import (
 )
 
 type MockProducer struct {
-	SetupCalled        bool
-	DeclareQueueCalled bool
-	PushCalled         bool
-	GetChannelCalled   bool
-	MockChannel        *amqp.Channel
+	SetupCalled           bool
+	DeclareQueueCalled    bool
+	PushCalled            bool
+	PushToExchangeCalled  bool
+	GetChannelCalled      bool
+	DeclareExchangeCalled bool
+	MockChannel           *amqp.Channel
 }
 
 func (m *MockProducer) DeclareQueue(name string, durable bool, deleteWhenUnused bool, exclusive bool, noWait bool, args amqp.Table) (amqp.Queue, error) {
@@ -34,6 +36,15 @@ func (m *MockProducer) GetChannel() *amqp.Channel {
 	return m.MockChannel
 }
 
+func (m *MockProducer) DeclareExchange(ame string, exchangeType string, durable bool, autoDeleted bool, internal bool, noWait bool, arguments amqp.Table) error {
+	m.DeclareExchangeCalled = true
+	return nil
+}
+
+func (m *MockProducer) PushToExchange(ctx context.Context, body string, exchangeName string, mandatory bool, immediate bool) error {
+	m.PushToExchangeCalled = true
+	return nil
+}
 func TestApp_handleTest(t *testing.T) {
 	// Setup
 	mockProducer := new(MockProducer)
