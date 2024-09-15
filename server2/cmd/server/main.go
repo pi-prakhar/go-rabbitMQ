@@ -10,8 +10,10 @@ import (
 )
 
 const (
-	CONFIG_FILE = "config/config.yml"
-	TEST_QUEUE  = "test"
+	CONFIG_FILE        = "config/config.yml"
+	TEST_QUEUE         = "test"
+	MESSAGE_EXCHANGE   = "messages"
+	BROADCAST_EXCHANGE = "broadcast"
 )
 
 func main() {
@@ -30,12 +32,18 @@ func main() {
 
 	defer conn.Close()
 
-	consumer, err := rabbitmq.NewConsumer(conn)
+	var consumer rabbitmq.RMQConsumer
+	consumer, err = rabbitmq.NewConsumer(conn)
 	if err != nil {
 		log.Fatal("Error : Failed to setup new rabbitMq channel", err)
 	}
 
-	defer consumer.Channel.Close()
+	defer consumer.GetChannel().Close()
+
+	err = consumer.DeclareExchange(MESSAGE_EXCHANGE, "direct", true, false, false, false, nil)
+	if err != nil {
+		log.Fatal("Error : Failed to declare exchange : ", MESSAGE_EXCHANGE, err)
+	}
 
 	q, err := consumer.DeclareQueue(TEST_QUEUE, true, false, false, false, nil)
 	if err != nil {
@@ -44,7 +52,37 @@ func main() {
 
 	err = consumer.Listen(q.Name, "", false, false, false, false, nil)
 	if err != nil {
-		log.Fatal("Error : Failed to register a consumer")
+		log.Fatal("Error : Failed to start listener for queue : ", q.Name)
+	}
+
+	qTemp1, err := consumer.DeclareQueue("", false, false, true, false, nil)
+	if err != nil {
+		log.Fatal("Error : Failed to declare queue temporary queue 1", err)
+	}
+
+	err = consumer.BindQueueToChannel(qTemp1.Name, "", MESSAGE_EXCHANGE, false, nil)
+	if err != nil {
+		log.Fatalf("Error : Failed to bind queue : %s to exchange : %s", qTemp1.Name, BROADCAST_EXCHANGE)
+	}
+
+	err = consumer.Listen(qTemp1.Name, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatal("Error : Failed to start listener for queue : ", qTemp1.Name)
+	}
+
+	qTemp2, err := consumer.DeclareQueue("", false, false, true, false, nil)
+	if err != nil {
+		log.Fatal("Error : Failed to declare queue temporary queue", err)
+	}
+
+	err = consumer.BindQueueToChannel(qTemp2.Name, "1", MESSAGE_EXCHANGE, false, nil)
+	if err != nil {
+		log.Fatalf("Error : Failed to bind queue : %s to exchange : %s", qTemp2.Name, BROADCAST_EXCHANGE)
+	}
+
+	err = consumer.ListenWithPriority(qTemp2.Name, "", false, false, false, false, nil)
+	if err != nil {
+		log.Fatal("Error : Failed to start listener for queue : ", qTemp2.Name)
 	}
 
 	app := &api.App{
