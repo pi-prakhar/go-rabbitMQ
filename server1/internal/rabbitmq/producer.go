@@ -9,7 +9,7 @@ import (
 type RMQProducer interface {
 	DeclareQueue(name string, durable bool, deleteWhenUnused bool, exclusive bool, noWait bool, args amqp.Table) (amqp.Queue, error)
 	Push(ctx context.Context, qName string, body string, exchangeName string, mandatory bool, immediate bool) error
-	PushToExchange(ctx context.Context, body string, exchangeName string, mandatory bool, immediate bool) error
+	PushToExchange(ctx context.Context, routingKey string, body string, exchangeName string, mandatory bool, immediate bool) error
 	GetChannel() *amqp.Channel
 	DeclareExchange(name string, exchangeType string, durable bool, autoDeleted bool, internal bool, noWait bool, arguments amqp.Table) error
 }
@@ -17,16 +17,6 @@ type RMQProducer interface {
 type Producer struct {
 	connection *amqp.Connection
 	channel    *amqp.Channel
-}
-
-func (p *Producer) setup() error {
-	channel, err := p.connection.Channel()
-
-	if err != nil {
-		return err
-	}
-	p.channel = channel
-	return nil
 }
 
 func (p *Producer) GetChannel() *amqp.Channel {
@@ -81,10 +71,10 @@ func (p *Producer) Push(ctx context.Context, qName string, body string, exchange
 	return nil
 }
 
-func (p *Producer) PushToExchange(ctx context.Context, body string, exchangeName string, mandatory bool, immediate bool) error {
+func (p *Producer) PushToExchange(ctx context.Context, routingKey string, body string, exchangeName string, mandatory bool, immediate bool) error {
 	err := p.channel.PublishWithContext(ctx,
 		exchangeName,
-		"",
+		routingKey,
 		mandatory,
 		immediate,
 		amqp.Publishing{
@@ -96,6 +86,16 @@ func (p *Producer) PushToExchange(ctx context.Context, body string, exchangeName
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (p *Producer) setup() error {
+	channel, err := p.connection.Channel()
+
+	if err != nil {
+		return err
+	}
+	p.channel = channel
 	return nil
 }
 

@@ -41,7 +41,7 @@ func (m *MockProducer) DeclareExchange(ame string, exchangeType string, durable 
 	return nil
 }
 
-func (m *MockProducer) PushToExchange(ctx context.Context, body string, exchangeName string, mandatory bool, immediate bool) error {
+func (m *MockProducer) PushToExchange(ctx context.Context, routingKey string, body string, exchangeName string, mandatory bool, immediate bool) error {
 	m.PushToExchangeCalled = true
 	return nil
 }
@@ -94,7 +94,6 @@ func TestApp_handlePushSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// req.Header.Set("Content-Type", "application/json") // Set content type if needed
 
 	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
@@ -155,7 +154,7 @@ func TestApp_handlePushFailBadRequest(t *testing.T) {
 	}
 
 	// Check the response body
-	expected := `{"message":"Failed to decode request body","code":400,"error":"json: unknown field \"msg\""}`
+	expected := `{"message":"Required fields are missing","code":400,"error":"Key: 'Message.Message' Error:Field validation for 'Message' failed on the 'required' tag"}`
 	got := strings.TrimSpace(rr.Body.String())
 
 	if got != expected {
@@ -196,5 +195,48 @@ func TestApp_handlePushFailMethodNOtAllowed(t *testing.T) {
 	// Check the status code
 	if status := rr.Code; status != http.StatusMethodNotAllowed {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
+	}
+}
+
+func TestApp_handlePushToExchangeSuccess(t *testing.T) {
+	// Setup
+	mockProducer := new(MockProducer)
+	app := App{
+		Producer:  mockProducer,
+		QueueTest: &amqp.Queue{Name: "test"},
+	}
+
+	// Create a test message
+	message := models.MessageWithPrirority{
+		Message: "test message",
+	}
+	body, _ := json.Marshal(message)
+
+	// Create a request with the message as body
+	req, err := http.NewRequest("POST", "/push/message", bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Create a ResponseRecorder to capture the response
+	rr := httptest.NewRecorder()
+
+	// Call the function being tested
+	handler := app.NewRouter()
+
+	// Test
+	handler.ServeHTTP(rr, req)
+
+	// Check the status code
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+
+	// Check the response body
+	expected := `{"message":"Succesfull Pushed Message to exchange messages with priority : ","code":200,"data":"test message"}`
+	got := strings.TrimSpace(rr.Body.String())
+
+	if got != expected {
+		t.Errorf("handler returned unexpected body: got %v want %v", got, expected)
 	}
 }

@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	CONFIG_FILE   = "config/config.yml"
-	TEST_QUEUE    = "test"
-	EXCHANGE_NAME = "messages"
+	CONFIG_FILE        = "config/config.yml"
+	TEST_QUEUE         = "test"
+	MESSAGE_EXCHANGE   = "messages"
+	BROADCAST_EXCHANGE = "broadcast"
 )
 
 func main() {
@@ -38,10 +39,16 @@ func main() {
 
 	defer producer.GetChannel().Close()
 
-	err = producer.DeclareExchange(EXCHANGE_NAME, "fanout", true, false, false, false, nil)
+	// err = producer.DeclareExchange(BROADCAST_EXCHANGE, "fanout", true, false, false, false, nil)
+
+	// if err != nil {
+	// 	log.Fatal("Error : Failed to declare exchange : %s", BROADCAST_EXCHANGE)
+	// }
+
+	err = producer.DeclareExchange(MESSAGE_EXCHANGE, "direct", true, false, false, false, nil)
 
 	if err != nil {
-		log.Fatal("Error : Failed to declare exchange")
+		log.Fatal("Error : Failed to declare exchange : ", MESSAGE_EXCHANGE, err)
 	}
 
 	q, err := producer.DeclareQueue(TEST_QUEUE, true, false, false, false, nil)

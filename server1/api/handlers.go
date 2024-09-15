@@ -11,6 +11,11 @@ import (
 	"time"
 )
 
+const (
+	MESSAGE_EXCHANGE   = "messages"
+	BROADCAST_EXCHANGE = "broadcast"
+)
+
 func (app *App) handleTest(w http.ResponseWriter, r *http.Request) {
 	res := "Hello"
 	w.Header().Add("content-Type", "text/html")
@@ -31,11 +36,22 @@ func (app *App) sendMessageToQueue(w http.ResponseWriter, r *http.Request) {
 	var message models.Message
 
 	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
 	err := decoder.Decode(&message)
 	if err != nil {
 		res = &utils.ErrorResponse{
 			Message:    "Failed to decode request body",
+			StatusCode: http.StatusBadRequest,
+			Error:      err.Error(),
+		}
+		res.Write(w)
+		return
+	}
+
+	//validate
+	err = utils.ValidateStruct(message)
+	if err != nil {
+		res = &utils.ErrorResponse{
+			Message:    "Required fields are missing",
 			StatusCode: http.StatusBadRequest,
 			Error:      err.Error(),
 		}
@@ -60,18 +76,17 @@ func (app *App) sendMessageToQueue(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("Successfully pushed message to queue : %s", app.QueueTest.Name)
-
 	res = &utils.SuccessResponse[string]{
 		Message:    fmt.Sprintf("Succesfull Pushed Message to queue %s", app.QueueTest.Name),
 		StatusCode: http.StatusOK,
 		Data:       message.Message,
 	}
 	res.Write(w)
+
+	log.Printf("Successfully pushed message to queue : %s", app.QueueTest.Name)
 }
 
-func (app *App) sendMessageToQueueExhange(w http.ResponseWriter, r *http.Request) {
-
+func (app *App) sendMessageToExchange(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(app.HandlerTimeout))
 	defer cancel()
 
@@ -81,11 +96,11 @@ func (app *App) sendMessageToQueueExhange(w http.ResponseWriter, r *http.Request
 	}
 
 	var res utils.Response
-	var message models.Message
+	var message models.MessageWithPrirority
+	var err error
 
 	decoder := json.NewDecoder(r.Body)
-	decoder.DisallowUnknownFields()
-	err := decoder.Decode(&message)
+	err = decoder.Decode(&message)
 	if err != nil {
 		res = &utils.ErrorResponse{
 			Message:    "Failed to decode request body",
@@ -96,16 +111,29 @@ func (app *App) sendMessageToQueueExhange(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	//push to queue
-	if err = app.Producer.Push(ctx,
-		app.QueueTest.Name,
-		message.Message,
-		"",
-		false,
-		false,
-	); err != nil {
+	//validate
+	err = utils.ValidateStruct(message)
+	if err != nil {
 		res = &utils.ErrorResponse{
-			Message:    fmt.Sprintf("Failed to push message to exchange : %s", app.QueueTest.Name),
+			Message:    "Required fields are missing",
+			StatusCode: http.StatusBadRequest,
+			Error:      err.Error(),
+		}
+		res.Write(w)
+		return
+	}
+
+	//push to exchange
+	err = app.Producer.PushToExchange(ctx,
+		message.Priority,
+		message.Message,
+		MESSAGE_EXCHANGE,
+		false,
+		false,
+	)
+	if err != nil {
+		res = &utils.ErrorResponse{
+			Message:    fmt.Sprintf("Failed to push message to exchange : %s with priority : %s", MESSAGE_EXCHANGE, message.Priority),
 			StatusCode: http.StatusInternalServerError,
 			Error:      err.Error(),
 		}
@@ -113,12 +141,12 @@ func (app *App) sendMessageToQueueExhange(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	log.Printf("Successfully pushed message to queue : %s", app.QueueTest.Name)
-
 	res = &utils.SuccessResponse[string]{
-		Message:    fmt.Sprintf("Succesfull Pushed Message to queue %s", app.QueueTest.Name),
+		Message:    fmt.Sprintf("Succesfull Pushed Message to exchange %s with priority : %s", MESSAGE_EXCHANGE, message.Priority),
 		StatusCode: http.StatusOK,
 		Data:       message.Message,
 	}
 	res.Write(w)
+
+	log.Printf("Successfully pushed message to exchange : %s with priority : %s", MESSAGE_EXCHANGE, message.Priority)
 }

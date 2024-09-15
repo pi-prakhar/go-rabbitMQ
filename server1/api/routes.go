@@ -18,7 +18,7 @@ func (app *App) NewRouter() http.Handler {
 
 	mux.HandleFunc("/test", app.handleTest)
 	mux.HandleFunc("/push", app.sendMessageToQueue)
-	mux.HandleFunc("/push/{exchangeName}", app.sendMessageToExchange)
+	mux.HandleFunc("/push/message", app.sendMessageToExchange)
 
 	return app.corsMiddleware(mux)
 }
